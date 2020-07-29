@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import sys
 import os
 import random
@@ -7,26 +5,6 @@ import math
 
 import numpy as np
 import operator
-
-#####################################################
-#####################################################
-# Please enter the number of hours you spent on this
-# assignment here
-num_hours_i_spent_on_this_assignment = 0
-#####################################################
-#####################################################
-
-#####################################################
-#####################################################
-# Give one short piece of feedback about the course so far. What
-# have you found most interesting? Is there a topic that you had trouble
-# understanding? Are there any changes that could improve the value of the
-# course to you? (We will anonymize these before reading them.)
-# <Your feedback goes here>
-#####################################################
-#####################################################
-
-
 
 # Outputs a random integer, according to a multinomial
 # distribution specified by probs.
@@ -87,16 +65,61 @@ class HMM():
             sequence.append(char)
         return sequence
 
-    # Outputs the most likely sequence of states given an emission sequence
-    # - sequence: String with characters [A,C,T,G]
-    # return: list of state indices, e.g. [0,0,0,1,1,0,0,...]
-    def viterbi(self, sequence):
-        ###########################################
-        # Start your code
-        print("My code here")
-        # End your code
-        ###########################################
+    def generate_forward_matrix(self, size, frw):
+        prob=[]
+        # Create the Forward Prob Matrix
+        for iterator in range(1, size, 1):
+            for j in range(0, len(self.prior), 1):
+                for i in range(0, len(self.prior), 1):
+                    temp_prob = math.log(self.transition[i][j]) + math.log(self.emission[j][sequence[iterator]]) + frw[iterator-1][i]
+                    prob.append(temp_prob)
+                frw[iterator][j] = self.log_sum(prob)
+                prob=[]
+        return frw
+    
+    def generate_backward_matrix(self, size, bck):
+        prob = []
+        for iterator in range(size-2,-1,-1):
+            for j in range(self.num_states):
+                for i in range(self.num_states):
+                    temo_prob =  math.log(self.transition[j][i]) + math.log(self.emission[i][sequence[iterator+1]]) + bck[iterator+1][i]
+                    prob.append(temo_prob)
+                bck[iterator][j] = self.log_sum(prob)
+                prob=[]
+        return bck
 
+    # Outputs the most likely sequence of states given an emission sequence        
+    def viterbi(self, sequence):
+        # print("my code viterbi")
+        size = len(sequence)
+        
+        # Initialize to  emission probabilities 
+        firstA, firstB, rowA, rowB  = self.emission[0][sequence[0]], self.emission[1][sequence[0]], np.empty([self.num_states, size]), np.empty([self.num_states, size])
+        # Initialization of the Probabilities
+        rowA[0, 0], rowA[1, 0], rowB[0, 0], rowB[1, 0] = math.log(self.prior[0]) + math.log(firstA), math.log(self.prior[1]) + math.log(firstB), 0, 0
+        
+        for i in range(1, size):
+            for j in range(0, self.num_states):
+                # Set previous, output (emission) and transition probabilities 
+                previousSecond = rowA[1][i-1]
+                previousFIrst = rowA[0][i-1]
+
+                tempResult = self.emission[j][sequence[i]]
+                transOne, transTwo  = self.transition[0][j], self.transition[1][j]
+
+                temp_smaller, temp_larger = math.log(transOne) + previousFIrst, math.log(transTwo) + previousSecond
+                # Set to max
+                rowA[j, i] = max(temp_smaller, temp_larger) + math.log(tempResult)
+                rowB[j, i] = np.argmax([temp_smaller, temp_larger])
+
+        current_s = np.empty(size, int)        
+        # Determines the state with the highest probability
+        current_s[size - 1] = rowA[:, size - 1].argmax()
+        for j in range(size -1, 0, -1):
+            current_s[j-1] = rowB[current_s[j], j]
+        final_list = current_s.tolist()
+        
+        return final_list
 
     def log_sum(self, factors):
         if abs(min(factors)) > abs(max(factors)):
@@ -113,11 +136,43 @@ class HMM():
     # return: posterior distribution. shape should be (len(sequence), 2)
     # Please use log_sum() in posterior computations.
     def posterior(self, sequence):
+        
         ###########################################
         # Start your code
-        print("My code here")
+        # print("My code here post")
         # End your code
         ###########################################
+        size=len(sequence)
+        frw, bck, final_result = [], [], []
+        
+        for i in range (0,size,1):
+          frw.append([0,0]), bck.append([1,1]), final_result.append([0,0])
+		
+		## initial the first probility for forward matrix
+        low_part = math.log(self.prior[0])+math.log(self.emission[0][sequence[0]])
+        high_part = math.log(self.prior[1])+math.log(self.emission[1][sequence[0]])
+        
+        # Initialzie the Forward Prob
+        frw[0][0] = self.log_sum([low_part])
+        frw[0][1] = self.log_sum([high_part])
+        # Initialzie the Backwad Prob
+        bck[size-1][0] = self.log_sum([math.log(bck[size-1][0])])
+        bck[size-1][1] = self.log_sum([math.log(bck[size-1][1])])
+
+        # Create the Forward Prob Matrix
+        frw = self.generate_forward_matrix(size, frw)
+        # Create the Forward Prob Matrix
+        bck = self.generate_backward_matrix(size, bck)
+				
+		# Using the frw and bck matrix, obtain the final result 
+        for iterator in range(size):
+            for j in range(self.num_states):
+                multiple = frw[iterator][j] * bck[iterator][j]
+                result = (1 / self.log_sum(frw[size-1]))
+                final_result[iterator][j] = (result * multiple)
+
+        return final_result
+
 
 
     # Output the most likely state for each symbol in an emmision sequence
@@ -181,6 +236,7 @@ if __name__ == '__main__':
     for sequence in sequences:
         viterbi   = hmm.viterbi(sequence)
         posterior = hmm.posterior_decode(sequence)
+        # posterior = []
         write_output(file, viterbi, posterior)
 
 
