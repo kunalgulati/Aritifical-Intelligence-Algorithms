@@ -1,29 +1,3 @@
-#!/usr/bin/python3
-# CMPT310 A2
-#####################################################
-#####################################################
-# Please enter the number of hours you spent on this
-# assignment here
-"""
-num_hours_i_spent_on_this_assignment = 
-"""
-#
-#####################################################
-#####################################################
-
-#####################################################
-#####################################################
-# Give one short piece of feedback about the course so far. What
-# have you found most interesting? Is there a topic that you had trouble
-# understanding? Are there any changes that could improve the value of the
-# course to you? (We will anonymize these before reading them.)
-"""
-<Your feedback goes here>
-
-
-"""
-#####################################################
-#####################################################
 import sys, getopt
 import copy
 import random
@@ -116,19 +90,85 @@ def main(argv):
 #  DPLLsat(), DPLL(), pure-elim(), propagate-units(), and
 #  any other auxiliary functions
 def solve_dpll(instance, verbosity):
-    # print(instance)
-    # instance.VARS goes 1 to N in a dict
-    # print(instance.VARS)
-    # print(verbosity)
-    ###########################################
-    # Start your code
+    
     clauses = instance.clauses
     variables = instance.VARS
+    
+    solution=[]   ##create array
+    # clauses=propagate_units(clauses.copy())
+    checker = None
+    #Begin the recursion
+    checker=DPLL(variables.copy(),clauses.copy(),[]) 
+    if checker==False:
+        print("UNSAT")
+    else:
+        print("SAT")
+        for iterator in checker:
+            if iterator>0:
+                solution.append(iterator)
+        if(verbosity):
+            solution.sort()
+            # Print the Solution
+            print(solution)        
 
+def DPLL(variables,checkClause,model):
+    checker=True
+    latestClause=[]
 
+    if checkClause==0:
+        return False
 
-
-
+    if checkClause==[]:
+        return model
+    else:
+        maximum=0
+        for iterator in checkClause:
+            for each in iterator:
+                if(abs(each)>maximum):
+                    maximum=each
+        if checker:
+            # remove the value
+            tempCluases = []
+            if checker==False:
+                maximum=0-maximum
+            for i in checkClause:
+                new_clause=[]
+                if maximum in i:
+                    continue
+                if -maximum in i:
+                    for j in i:
+                        if(j!=-maximum):
+                            new_clause.append(j)
+                    if new_clause==[]:
+                        return 0
+                    tempCluases.append(new_clause)
+                else:
+                    tempCluases.append(i)
+            latestClause = tempCluases
+            # Recursive Call to DPLL
+            checker=DPLL(maximum, latestClause, model+[maximum])
+            if checker==False:
+                # remove the value
+                tempCluases = []
+                if checker==False:
+                    maximum=0-maximum
+                for i in checkClause:
+                    new_clause=[]
+                    if maximum in i:
+                        continue
+                    if -maximum in i:
+                        for j in i:
+                            if(j!=-maximum):
+                                new_clause.append(j)
+                        if new_clause==[]:
+                            return 0
+                        tempCluases.append(new_clause)
+                    else:
+                        tempCluases.append(i)
+                latestClause = tempCluases
+                # Recursive Call to DPLL
+                checker=DPLL(maximum, latestClause, model+[maximum])
+        return checker
 
     ###########################################
 
