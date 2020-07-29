@@ -294,6 +294,9 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        # There are four corners, and initally we have visited No corners
+        # So set it to 0
+        self.initialCornerVisited = [0,0,0,0]
 
 
     def getStartState(self):
@@ -302,14 +305,20 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-
+        # Return the starting Position and how many Corners have been visited
+        return (self.startingPosition, self.initialCornerVisited)
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-
+        # Goal State is when all the corners of the pacman game have been visited 
+        # # i.e. even if one of the state in the argument "state" is 
+        for each in state[1]:
+            if each==0:
+                return False
+        return True
 
     def getSuccessors(self, state):
         """
@@ -321,7 +330,7 @@ class CornersProblem(search.SearchProblem):
             state, 'action' is the action required to get there, and 'stepCost'
             is the incremental cost of expanding to that successor
         """
-
+        
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
@@ -330,9 +339,24 @@ class CornersProblem(search.SearchProblem):
             #   dx, dy = Actions.directionToVector(action)
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
-
             "*** YOUR CODE HERE ***"
-
+            x,y = state[0]
+            corners = state[1]
+            # print(type(corners))
+            dx,dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            deepCopyCorner = corners[:]
+            
+            # If it's not a wall, then check if it's a corner
+            if not self.walls[nextx][nexty]:
+                nextState = (nextx, nexty)
+                if nextState in self.corners and deepCopyCorner[self.corners.index((nextx, nexty))] != 1:
+                    # print(nextState, ": index : ",  self.corners.index(nextState))
+                    deepCopyCorner[self.corners.index(nextState)] = 1                
+                # newState = (nextState, cornerVisited_new)
+                newState = (nextState, deepCopyCorner)
+                cost = self.costFn(nextx,nexty)
+                successors.append(( newState, action, cost))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -370,10 +394,30 @@ def cornersHeuristic(state, problem):
     """
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-
     "*** YOUR CODE HERE ***"
+    
+    # Goal state #
+    if problem.isGoalState(state) == False:
+        # Calculate all distances from goals(not visited corners)
+        distance = [] 
+        # for index,item in enumerate(state[1]):
+        for i in range(4):
+            eachCorner = state[1][:]
+            currentPosition = state[0]
+            # if == 0 , that means the corner has not been visited yet
+            if eachCorner[i] == 0: 
+                # Calculate the distance
+                distance.append(util.manhattanDistance(currentPosition,corners[i]))
+    else:
+        # i.e. pacman is already at the goal state, and distance from the goal position is "0"
+        return 0
+    
+    # Worst case. This guess should be higher than real. Pick higher distance #
+    return max(distance)
+    
 
 
+    
 def mazeDistance(point1, point2, gameState):
     """
     Returns the maze distance between any two points, using the search functions
